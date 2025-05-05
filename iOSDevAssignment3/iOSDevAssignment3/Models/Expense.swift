@@ -13,7 +13,7 @@ struct Expense: Identifiable, Codable {
     var amount: Double
     var date: Date
     var paidBy: UUID
-    var splitAmong: [UUID]
+    var splitAmong: [Person]
     var category: ExpenseCategory
     
     var amountPerPerson: Double {

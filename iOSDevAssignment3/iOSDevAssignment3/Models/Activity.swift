@@ -14,7 +14,7 @@ struct Activity: Identifiable, Codable {
     var date: Date
     var startTime: Date
     var endTime: Date
-    var participants: [UUID]
+    var participants: [Person]
     var location: String
     
     var isAllDay: Bool {

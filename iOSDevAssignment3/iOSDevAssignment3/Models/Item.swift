@@ -15,6 +15,6 @@ struct Item: Identifiable, Codable {
     var id = UUID()
     var name: String
     var quantity: Int
-    var assignedTo: UUID?
+    var assignedTo: Person?
     var status: ItemStatus
 }
