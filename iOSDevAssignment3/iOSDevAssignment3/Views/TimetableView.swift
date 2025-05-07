@@ -116,7 +116,11 @@ struct TimetableView: View {
                 .font(.title2)
         })
         .sheet(isPresented: $showingAddActivity) {
-            AddActivityView(isPresented: $showingAddActivity, trip: trip)
+            AddActivityView(
+                isPresented: $showingAddActivity,
+                trip: trip,
+                activityDate: days.indices.contains(selectedDay) ? days[selectedDay] : trip.startDate
+            )
         }
     }
     

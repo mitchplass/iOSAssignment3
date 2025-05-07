@@ -22,18 +22,18 @@ struct AddActivityView: View {
     @State private var selectedParticipants: [Person] = []
     @State private var showingParticipantSelection = false
     
-    init(isPresented: Binding<Bool>, trip: Trip) {
+    init(isPresented: Binding<Bool>, trip: Trip, activityDate: Date? = nil) {
         self._isPresented = isPresented
         self.trip = trip
-        
-        let defaultDate = trip.startDate
+
+        let defaultDate = activityDate ?? trip.startDate
         self._date = State(initialValue: defaultDate)
-        
+
         var startComponents = Calendar.current.dateComponents([.year, .month, .day], from: defaultDate)
         startComponents.hour = 9
         startComponents.minute = 0
         self._startTime = State(initialValue: Calendar.current.date(from: startComponents) ?? defaultDate)
-        
+
         var endComponents = startComponents
         endComponents.hour = 10
         self._endTime = State(initialValue: Calendar.current.date(from: endComponents) ?? defaultDate.addingTimeInterval(3600))
