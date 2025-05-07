@@ -10,6 +10,6 @@ import Foundation
 struct Destination: Identifiable, Codable {
     var id = UUID()
     var name: String
-    var lat: String
-    var long: String
+    var lat: String?
+    var long: String?
 }

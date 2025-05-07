@@ -31,7 +31,7 @@ struct TripInfoView: View {
             
             VStack(alignment: .leading, spacing: 16) {
                 InfoRow(label: "Trip Name", value: trip.name)
-                InfoRow(label: "Destination", value: trip.destination)
+                InfoRow(label: "Destination", value: trip.destination.name)
                 InfoRow(label: "Dates", value: formatDateRange(from: trip.startDate, to: trip.endDate))
                 InfoRow(label: "Duration", value: "\(trip.numberOfDays) days")
                 InfoRow(label: "Participants", value: "\(trip.participants.count) people")

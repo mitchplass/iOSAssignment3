@@ -50,7 +50,7 @@ struct TripRowView: View {
                 .font(.headline)
                 .foregroundColor(.primary)
             
-            Text(trip.destination)
+            Text(trip.destination.name)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
