@@ -15,29 +15,25 @@ struct TripDetailView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // TimetableView(trip: trip)
-            EmptyView()
+            TimetableView(trip: trip)
                 .tabItem {
                     Label("Timetable", systemImage: "calendar")
                 }
                 .tag(0)
             
-            // ItemsView(trip: trip)
-            EmptyView()
+            ItemsView(trip: trip)
                 .tabItem {
                     Label("Items", systemImage: "checklist")
                 }
                 .tag(1)
             
-            // ExpensesView(trip: trip)
-            EmptyView()
+            ExpensesView(trip: trip)
                 .tabItem {
                     Label("Expenses", systemImage: "dollarsign.circle")
                 }
                 .tag(2)
             
-            // TripInfoView(trip: trip)
-            EmptyView()
+            TripInfoView(trip: trip)
                 .tabItem {
                     Label("Info", systemImage: "info.circle")
                 }
