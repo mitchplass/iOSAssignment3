@@ -21,23 +21,29 @@ struct TripDetailView: View {
                 }
                 .tag(0)
             
+            DestinationView(destination: trip.destination)
+                .tabItem {
+                    Label("Destination", systemImage: "map")
+                }
+                .tag(1)
+            
             ItemsView(trip: trip)
                 .tabItem {
                     Label("Items", systemImage: "checklist")
                 }
-                .tag(1)
+                .tag(2)
             
             ExpensesView(trip: trip)
                 .tabItem {
                     Label("Expenses", systemImage: "dollarsign.circle")
                 }
-                .tag(2)
+                .tag(3)
             
             TripInfoView(trip: trip)
                 .tabItem {
                     Label("Info", systemImage: "info.circle")
                 }
-                .tag(3)
+                .tag(4)
         }
         .navigationTitle(trip.name)
     }

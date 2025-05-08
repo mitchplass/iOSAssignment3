@@ -7,24 +7,71 @@
 
 import Foundation
 import CoreLocation
+import SwiftUI
 
 class WeatherViewModel : ObservableObject {
-    func getCoordinates(destination: Destination) {
-        let geocoder = CLGeocoder()
-        
-        geocoder.geocodeAddressString(destination.name) { (placemarks, error) in
+    @Published var weatherData: WeatherData?
+    @Published var errorString = ""
+    var apiKey = "96e26291dc1f7032f20351ff609a7127"
+    
+    func getWeather(destination: String) {
+        getCoordinates(from: destination) { coordinates, error in
             if let error = error {
-                print("Geocoding error: \(error.localizedDescription)")
+                self.errorString = "Failed to gather weather data"
+            } else if let coordinates = coordinates {
+                self.requestWeatherData(coordinates: coordinates) { result in
+                    switch result {
+                    case .success(let weatherData):
+                        self.weatherData = weatherData
+                    case .failure(let error):
+                        self.errorString = "Failed to get weather data"
+                    }
+                }
+            } else {
+                self.errorString = "Failed to gather weather data"
+            }
+        }
+    }
+    
+    func requestWeatherData(coordinates: CLLocationCoordinate2D, completion: @escaping (Result<WeatherData, Error>) -> Void) {
+        let urlString = "https://api.openweathermap.org/data/2.5/weather?lat=\(coordinates.latitude)&lon=\(coordinates.longitude)&appid=\(apiKey)&units=metric"
+        
+        guard let url = URL(string: urlString) else {
+            completion(.failure(NSError(domain: "Invalid URL", code: -1)))
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+            } else if let data = data {
+                do {
+                    let decoder = JSONDecoder()
+                    let weatherData = try decoder.decode(WeatherData.self, from: data)
+                    completion(.success(weatherData))
+                } catch {
+                    completion(.failure(error))
+                }
+            } else {
+                completion(.failure(NSError(domain: "No data", code: -2)))
+            }
+        }
+        
+        task.resume()
+    }
+    
+    func getCoordinates(from address: String, completion: @escaping (CLLocationCoordinate2D?, Error?) -> Void) {
+        let geocoder = CLGeocoder()
+        geocoder.geocodeAddressString(address) { (placemarks, error) in
+            if let error = error {
+                completion(nil, error)
                 return
             }
-
-            if let placemark = placemarks?.first,
-               let location = placemark.location {
-                let latitude = location.coordinate.latitude
-                let longitude = location.coordinate.longitude
-                print("Latitude: \(latitude), Longitude: \(longitude)")
+            if let placemark = placemarks?.first, let location = placemark.location {
+                let coordinates = location.coordinate
+                completion(coordinates, nil)
             } else {
-                print("No location found.")
+                completion(nil, nil)
             }
         }
     }

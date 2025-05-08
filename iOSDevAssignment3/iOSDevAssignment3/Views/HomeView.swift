@@ -42,7 +42,7 @@ struct HomeView: View {
                                             Text(trip.name)
                                                 .font(.headline)
                                             
-                                            Text(trip.destination.name)
+                                            Text(trip.destination)
                                                 .font(.subheadline)
                                                 .foregroundColor(.gray)
                                             

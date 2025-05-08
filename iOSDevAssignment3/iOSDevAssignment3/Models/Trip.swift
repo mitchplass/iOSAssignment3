@@ -10,7 +10,7 @@ import Foundation
 struct Trip: Identifiable, Codable {
     var id = UUID()
     var name: String
-    var destination: Destination
+    var destination: String
     var startDate: Date
     var endDate: Date
     var participants: [Person]

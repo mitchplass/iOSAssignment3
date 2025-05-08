@@ -168,7 +168,7 @@ struct NewTripView: View {
     private func createTrip() {
         let newTrip = Trip(
             name: name,
-            destination: Destination(name: destination),
+            destination: destination,
             startDate: startDate,
             endDate: endDate,
             participants: participants,
