@@ -11,69 +11,45 @@ import SwiftUI
 struct TimetableView: View {
     @EnvironmentObject var tripViewModel: TripViewModel
     let trip: Trip
-    @State private var showingAddActivity = false
-    @State private var selectedDay = 0
+    
+    @Binding var currentSelectedDateFromTimetable: Date?
+    
+    @State private var selectedDayIndex = 0
     
     var days: [Date] {
-        let calendar = Calendar.current
-        let startDate = calendar.startOfDay(for: trip.startDate)
-        
-        return (0..<trip.numberOfDays).compactMap { day in
-            calendar.date(byAdding: .day, value: day, to: startDate)
-        }
+        let calendar = Calendar.current; let startDate = calendar.startOfDay(for: trip.startDate)
+        return (0..<trip.numberOfDays).compactMap { day in calendar.date(byAdding: .day, value: day, to: startDate) }
     }
-    
+        
     var body: some View {
         VStack(spacing: 0) {
-            // Day selector
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(days.indices, id: \.self) { index in
-                        DayButton(
-                            day: days[index],
-                            isSelected: index == selectedDay,
-                            action: {
-                                selectedDay = index
+                        DayButton(day: days[index], isSelected: index == selectedDayIndex) {
+                            selectedDayIndex = index
+                            if !days.isEmpty && days.indices.contains(index) {
+                                currentSelectedDateFromTimetable = days[index]
                             }
-                        )
+                        }
                     }
                 }
                 .padding()
             }
             .background(Color(UIColor.secondarySystemBackground))
             
-            // Activities for the selected day
-            if selectedDay >= 0 && selectedDay < days.count {
-                let selectedDate = days[selectedDay]
-                let activitiesForDay = trip.activities.filter {
-                    Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
-                }.sorted { $0.startTime < $1.startTime }
+            if !days.isEmpty && days.indices.contains(selectedDayIndex) {
+                let currentSelectedDate = days[selectedDayIndex]
+                let activitiesForDay = trip.activities.filter { Calendar.current.isDate($0.date, inSameDayAs: currentSelectedDate) }.sorted { $0.startTime < $1.startTime }
                 
                 if activitiesForDay.isEmpty {
                     VStack(spacing: 20) {
                         Spacer()
-                        Text("No activities planned for this day")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        
-                        Button(action: {
-                            showingAddActivity = true
-                        }) {
-                            HStack {
-                                Image(systemName: "plus")
-                                Text("Add Activity")
-                            }
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .foregroundColor(.blue)
-                            .cornerRadius(10)
-                        }
-                        .padding(.horizontal, 40)
-                        
+                        Text("No activities planned for this day").font(.headline).foregroundColor(.gray)
+                        Text("Use the '+' button in the toolbar to add an activity.").font(.caption).foregroundColor(.gray)
                         Spacer()
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding()
                 } else {
                     ScrollView {
@@ -81,46 +57,29 @@ struct TimetableView: View {
                             ForEach(activitiesForDay) { activity in
                                 ActivityCell(activity: activity, allTripParticipants: trip.participants)
                                     .contextMenu {
-                                        Button(role: .destructive, action: {
-                                            deleteActivity(activity)
-                                        }) {
-                                            Label("Delete", systemImage: "trash")
-                                        }
+                                        Button(role: .destructive, action: { deleteActivity(activity) }) { Label("Delete", systemImage: "trash") }
                                     }
                             }
-                            
-                            Button(action: {
-                                showingAddActivity = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "plus")
-                                    Text("Add Another Activity")
-                                }
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color(UIColor.secondarySystemBackground))
-                                .foregroundColor(.blue)
-                                .cornerRadius(10)
-                            }
-                            .padding(.top, 8)
                         }
                         .padding()
                     }
                 }
+            } else {
+                VStack {
+                    Spacer()
+                    Text("No dates available for this trip.")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
             }
         }
-        .navigationBarItems(trailing: Button(action: {
-            showingAddActivity = true
-        }) {
-            Image(systemName: "plus")
-                .font(.title2)
-        })
-        .sheet(isPresented: $showingAddActivity) {
-            AddActivityView(
-                isPresented: $showingAddActivity,
-                trip: trip,
-                activityDate: days.indices.contains(selectedDay) ? days[selectedDay] : trip.startDate
-            )
+        .onAppear {
+            if currentSelectedDateFromTimetable == nil, !days.isEmpty, days.indices.contains(selectedDayIndex) {
+                currentSelectedDateFromTimetable = days[selectedDayIndex]
+            }
         }
     }
     
@@ -171,7 +130,6 @@ struct ActivityCell: View {
         return formatter
     }()
 
-    // Helper to get participant names
     private var participantNames: String {
         let names = activity.participants.compactMap { id in
             allTripParticipants.first { $0.id == id }?.name
@@ -228,7 +186,7 @@ struct ActivityCell: View {
                         Text(participantNames)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .lineLimit(1) // In case of many participants
+                            .lineLimit(1)
                     }
                 } else {
                      HStack(spacing: 4) {

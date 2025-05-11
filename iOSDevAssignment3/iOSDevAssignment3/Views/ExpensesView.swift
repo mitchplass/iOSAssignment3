@@ -11,88 +11,38 @@ import SwiftUI
 struct ExpensesView: View {
     @EnvironmentObject var tripViewModel: TripViewModel
     let trip: Trip
-    @State private var showingAddOrEditExpenseView = false
-    @State private var expenseToEdit: Expense? = nil
+    
+    var onEditExpense: (Expense) -> Void
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                if trip.expenses.isEmpty {
-                    if #available(iOS 17.0, *) {
-                        ContentUnavailableView(
-                            "No Expenses Logged",
-                            systemImage: "creditcard.trianglebadge.exclamationmark",
-                            description: Text("Tap '+' to add the first expense for this trip.")
-                        )
-                    } else {
-                        VStack {
-                            Spacer()
-                            Image(systemName: "creditcard.trianglebadge.exclamationmark")
-                                .font(.system(size: 50))
-                                .foregroundColor(.gray)
-                                .padding(.bottom)
-                            Text("No Expenses Logged")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            Text("Tap '+' to add the first expense for this trip.")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                            Spacer()
-                        }
-                    }
+        VStack(spacing: 0) {
+            if trip.expenses.isEmpty {
+                if #available(iOS 17.0, *) {
+                    ContentUnavailableView("No Expenses Logged", systemImage: "creditcard.trianglebadge.exclamationmark", description: Text("Tap '+' in the toolbar to add the first expense."))
                 } else {
-                    ExpenseSummaryHeaderView(trip: trip)
-                        .padding([.horizontal, .top])
-                        .padding(.bottom, 8)
-
-                    List {
-                        ForEach(trip.expenses.sorted(by: { $0.date > $1.date })) { expense in
-                            ExpenseRow(expense: expense, tripParticipants: trip.participants)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    self.expenseToEdit = expense
-                                    self.showingAddOrEditExpenseView = true
-                                }
-                                .contextMenu {
-                                    Button {
-                                        self.expenseToEdit = expense
-                                        self.showingAddOrEditExpenseView = true
-                                    } label: {
-                                        Label("Edit Expense", systemImage: "pencil")
-                                    }
-                                    Button(role: .destructive) {
-                                        tripViewModel.deleteExpense(from: trip.id, expenseId: expense.id)
-                                    } label: {
-                                        Label("Delete Expense", systemImage: "trash")
-                                    }
-                                }
-                        }
-                    }
-                    .listStyle(PlainListStyle())
-                }
-            }
-            .navigationTitle("Expenses")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        self.expenseToEdit = nil
-                        self.showingAddOrEditExpenseView = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
+                    VStack {
+                        Spacer(); Image(systemName: "creditcard.trianglebadge.exclamationmark").font(.system(size: 50)).foregroundColor(.gray).padding(.bottom)
+                        Text("No Expenses Logged").font(.title2).fontWeight(.semibold)
+                        Text("Tap '+' in the toolbar to add the first expense.").font(.subheadline).foregroundColor(.gray).multilineTextAlignment(.center).padding(.horizontal)
+                        Spacer()
                     }
                 }
-            }
-            .sheet(isPresented: $showingAddOrEditExpenseView) {
-                AddExpenseView(
-                    isPresented: $showingAddOrEditExpenseView,
-                    trip: trip,
-                    expenseToEdit: self.expenseToEdit
-                )
+            } else {
+                ExpenseSummaryHeaderView(trip: trip).padding([.horizontal, .top]).padding(.bottom, 8)
+                List {
+                    ForEach(trip.expenses.sorted(by: { $0.date > $1.date })) { expense in
+                        ExpenseRow(expense: expense, tripParticipants: trip.participants)
+                            .contentShape(Rectangle())
+                            .onTapGesture { onEditExpense(expense) }
+                            .contextMenu {
+                                Button { onEditExpense(expense) } label: { Label("Edit Expense", systemImage: "pencil") }
+                                Button(role: .destructive) { tripViewModel.deleteExpense(from: trip.id, expenseId: expense.id) } label: { Label("Delete Expense", systemImage: "trash") }
+                            }
+                    }
+                }
+                .listStyle(PlainListStyle())
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
@@ -193,7 +143,6 @@ struct ExpenseSummaryHeaderView: View {
         var balancesToSettle = netBalances.filter { abs($0.balance) > 0.01 }
 
         while true {
-            // sort by balance neg to pos
             balancesToSettle.sort { ($0.balance, $0.person.name) < ($1.balance, $1.person.name) }
             
             guard let ower = balancesToSettle.first(where: { $0.balance < -0.009 }),
