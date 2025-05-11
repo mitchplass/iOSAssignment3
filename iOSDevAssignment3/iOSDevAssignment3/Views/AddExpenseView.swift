@@ -11,41 +11,76 @@ struct AddExpenseView: View {
     @EnvironmentObject var tripViewModel: TripViewModel
     @Binding var isPresented: Bool
     let trip: Trip
-    
+    var expenseToEdit: Expense?
+
     @State private var title: String = ""
     @State private var amountString: String = ""
     @State private var date: Date = Date()
-    @State private var paidBy: Person.ID? = nil
+    @State private var paidBy: Person.ID?
     @State private var selectedSplitAmongIDs: [Person.ID] = []
     @State private var category: ExpenseCategory = .other
     @State private var notes: String = ""
+    // @State private var receiptImage: Image? // for future image picking
 
-    @State private var showingParticipantSheetForPaidBy = false
-    @State private var showingParticipantSheetForSplitAmong = false
-    
     @State private var isSplitUnequally: Bool = false
     @State private var customAmountsInput: [Person.ID: String] = [:]
+    
+    var formTitle: String {
+        expenseToEdit == nil ? "Add New Expense" : "Edit Expense"
+    }
 
     var availableParticipants: [Person] {
         trip.participants
     }
-
-    private var isValidForm: Bool {
-        !title.isEmpty && Double(amountString) != nil && paidBy != nil && !selectedSplitAmongIDs.isEmpty && validateCustomSplitLogic() == nil
+    
+    var formIsValid: Bool {
+        guard !title.isEmpty,
+              let _ = Double(amountString),
+              paidBy != nil,
+              !selectedSplitAmongIDs.isEmpty else {
+            return false
+        }
+        if isSplitUnequally {
+            return validateCustomSplitLogic() == nil
+        }
+        return true
     }
     
-    private func personName(for id: Person.ID?) -> String? {
-        guard let personId = id else { return nil }
-        return availableParticipants.first { $0.id == personId }?.name
+    init(isPresented: Binding<Bool>, trip: Trip, expenseToEdit: Expense? = nil) {
+        self._isPresented = isPresented
+        self.trip = trip
+        self.expenseToEdit = expenseToEdit
+
+        if let expense = expenseToEdit {
+            _title = State(initialValue: expense.title)
+            _amountString = State(initialValue: String(format: "%.2f", expense.amount))
+            _date = State(initialValue: expense.date)
+            _paidBy = State(initialValue: expense.paidBy)
+            _selectedSplitAmongIDs = State(initialValue: expense.splitAmong)
+            _category = State(initialValue: expense.category)
+            _notes = State(initialValue: expense.notes ?? "")
+            
+            if let customSplits = expense.customSplitAmounts, !customSplits.isEmpty {
+                _isSplitUnequally = State(initialValue: true)
+                var initialCustomInputs: [Person.ID: String] = [:]
+                for (id, amount) in customSplits {
+                    initialCustomInputs[id] = String(format: "%.2f", amount)
+                }
+                _customAmountsInput = State(initialValue: initialCustomInputs)
+            } else {
+                 _isSplitUnequally = State(initialValue: false)
+                 _customAmountsInput = State(initialValue: [:])
+            }
+        }
     }
 
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Expense Details")) {
-                    TextField("Title (e.g., Dinner)", text: $title)
+                    TextField("Title (e.g. dinner at tripsync hq)", text: $title)
                     HStack {
-                        Text("$")
+                        Text(Locale.current.currencySymbol ?? "$")
                         TextField("Amount", text: $amountString)
                             .keyboardType(.decimalPad)
                     }
@@ -79,6 +114,12 @@ struct AddExpenseView: View {
                                 .foregroundColor(selectedSplitAmongIDs.isEmpty ? .gray : .accentColor)
                         }
                     }
+                    .onChange(of: selectedSplitAmongIDs, initial: false) { oldValue, newValue in
+                        if isSplitUnequally {
+                            let newSelectedSet = Set(newValue)
+                            customAmountsInput = customAmountsInput.filter { newSelectedSet.contains($0.key) }
+                        }
+                    }
                 }
                 
                 Section(header: Text("Split Method")) {
@@ -107,32 +148,37 @@ struct AddExpenseView: View {
                             Text(validationError)
                                 .font(.caption)
                                 .foregroundColor(.red)
+                                .padding(.top, 2)
                         }
                     } else if isSplitUnequally && selectedSplitAmongIDs.isEmpty {
-                        Text("Select sharers first to set custom amounts.")
+                        Text("Please select sharers first to set custom amounts.")
                             .font(.caption)
                             .foregroundColor(.orange)
                     }
                 }
 
                 Section(header: Text("Optional Details")) {
-                    TextField("Notes (optional)", text: $notes, axis: .vertical)
+                    TextField("Notes (e.g. Amy ate nothing.)", text: $notes, axis: .vertical)
                         .lineLimit(3...)
-                    Button("Add Receipt (Future Feature)") {
+                    Button {
+                        // placeholder for receipt functionality
+                        print("Add receipt tapped - feature to be implemented")
+                    } label: {
+                        Label("Add Receipt Photo", systemImage: "doc.text.image")
                     }
-                    .foregroundColor(.gray)
+                    .foregroundColor(.accentColor)
                 }
             }
-            .navigationTitle("Add Expense")
+            .navigationTitle(formTitle)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { isPresented = false }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Add") {
-                        addExpense()
+                    Button(expenseToEdit == nil ? "Add" : "Save Changes") {
+                        saveExpense()
                     }
-                    .disabled(!isValidForm)
+                    .disabled(!formIsValid)
                 }
             }
         }
@@ -143,57 +189,71 @@ struct AddExpenseView: View {
         guard !selectedSplitAmongIDs.isEmpty else { return "Select sharers for custom split."}
         
         let totalExpenseAmount = Double(amountString) ?? 0.0
-        if totalExpenseAmount == 0 { return "Total expense amount must be greater than zero."}
+        if totalExpenseAmount <= 0 { return "Total expense amount must be greater than zero."}
 
         var currentSplitSum: Double = 0
-        var hasEmptyCustomAmount = false
+        var hasEmptyOrInvalidCustomAmount = false
         for personID in selectedSplitAmongIDs {
             guard let amountStr = customAmountsInput[personID], !amountStr.isEmpty, let amountVal = Double(amountStr) else {
-                hasEmptyCustomAmount = true
-                break
+                hasEmptyOrInvalidCustomAmount = true; break
             }
             if amountVal < 0 { return "Custom amounts cannot be negative." }
             currentSplitSum += amountVal
         }
 
-        if hasEmptyCustomAmount {
-            return "All selected sharers must have a custom amount."
-        }
+        if hasEmptyOrInvalidCustomAmount { return "All selected sharers must have a valid custom amount." }
 
-        if abs(currentSplitSum - totalExpenseAmount) > 0.01 { // Tolerance for floating point
-            return "Custom amounts sum (\(String(format: "%.2f", currentSplitSum))) must equal total expense (\(String(format: "%.2f", totalExpenseAmount)))."
+        if abs(currentSplitSum - totalExpenseAmount) > 0.01 {
+            return "Custom amounts sum (\(currentSplitSum.formatted(.currency(code: "AUD")))) must equal total expense (\(totalExpenseAmount.formatted(.currency(code: "AUD"))))."
         }
         return nil
     }
 
-    private func addExpense() {
-        guard let finalAmount = Double(amountString), let finalPaidBy = paidBy else { return }
+    private func saveExpense() {
+        guard let finalAmount = Double(amountString), let finalPaidBy = paidBy else {
+            print("Form data invalid for submission.")
+            return
+        }
 
         var finalCustomSplitAmounts: [Person.ID: Double]? = nil
-
+        if isSplitUnequally {
             var tempCustomAmounts: [Person.ID: Double] = [:]
+            var allValid = true
             for id in selectedSplitAmongIDs {
                 guard let amountStr = customAmountsInput[id], let amountVal = Double(amountStr) else {
-                    print("Error: Invalid custom amount string for \(personName(for: id) ?? "Unknown")")
-                    return
+                    allValid = false; break
                 }
                 tempCustomAmounts[id] = amountVal
             }
-            finalCustomSplitAmounts = tempCustomAmounts
+            guard allValid else { print("Error: Invalid amount during submission."); return }
+            finalCustomSplitAmounts = tempCustomAmounts.isEmpty ? nil : tempCustomAmounts
         }
 
-        let newExpense = Expense(
-            title: title,
-            amount: finalAmount,
-            date: date,
-            paidBy: finalPaidBy,
-            splitAmong: selectedSplitAmongIDs,
-            category: category,
-            notes: notes.isEmpty ? nil : notes,
-            receiptImageURL: nil,
-            customSplitAmounts: finalCustomSplitAmounts
-        )
-        tripViewModel.addExpense(to: trip.id, expense: newExpense)
+        if var existingExpense = expenseToEdit {
+            existingExpense.title = title
+            existingExpense.amount = finalAmount
+            existingExpense.date = date
+            existingExpense.paidBy = finalPaidBy
+            existingExpense.splitAmong = selectedSplitAmongIDs
+            existingExpense.category = category
+            existingExpense.notes = notes.isEmpty ? nil : notes
+            existingExpense.customSplitAmounts = finalCustomSplitAmounts
+            
+            tripViewModel.updateExpense(in: trip.id, expense: existingExpense)
+        } else {
+            let newExpense = Expense(
+                title: title,
+                amount: finalAmount,
+                date: date,
+                paidBy: finalPaidBy,
+                splitAmong: selectedSplitAmongIDs,
+                category: category,
+                notes: notes.isEmpty ? nil : notes,
+                receiptImageURL: nil, // implement later
+                customSplitAmounts: finalCustomSplitAmounts
+            )
+            tripViewModel.addExpense(to: trip.id, expense: newExpense)
+        }
         isPresented = false
     }
 }
