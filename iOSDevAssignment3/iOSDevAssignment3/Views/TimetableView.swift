@@ -79,7 +79,7 @@ struct TimetableView: View {
                     ScrollView {
                         LazyVStack(spacing: 16) {
                             ForEach(activitiesForDay) { activity in
-                                ActivityCell(activity: activity)
+                                ActivityCell(activity: activity, allTripParticipants: trip.participants)
                                     .contextMenu {
                                         Button(role: .destructive, action: {
                                             deleteActivity(activity)
@@ -163,13 +163,22 @@ struct DayButton: View {
 
 struct ActivityCell: View {
     let activity: Activity
-    
+    let allTripParticipants: [Person]
+
     private let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter
     }()
-    
+
+    // Helper to get participant names
+    private var participantNames: String {
+        let names = activity.participants.compactMap { id in
+            allTripParticipants.first { $0.id == id }?.name
+        }
+        return names.isEmpty ? "No participants assigned" : names.joined(separator: ", ")
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .trailing) {
@@ -186,17 +195,12 @@ struct ActivityCell: View {
             .frame(width: 65, alignment: .trailing)
             
             VStack(alignment: .center, spacing: 0) {
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 10, height: 10)
-                
-                Rectangle()
-                    .fill(Color.blue)
-                    .frame(width: 2)
-                    .frame(maxHeight: .infinity)
+                Circle().fill(Color.blue).frame(width: 10, height: 10)
+                Rectangle().fill(Color.blue).frame(width: 2).frame(maxHeight: .infinity)
             }
             .frame(width: 10)
-            
+
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(activity.title)
                     .font(.headline)
@@ -211,7 +215,6 @@ struct ActivityCell: View {
                     HStack(spacing: 4) {
                         Image(systemName: "mappin.circle.fill")
                             .foregroundColor(.red)
-                        
                         Text(activity.location)
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -222,10 +225,18 @@ struct ActivityCell: View {
                     HStack(spacing: 4) {
                         Image(systemName: "person.2.fill")
                             .foregroundColor(.blue)
-                        
-                        Text("\(activity.participants.count) participants")
+                        Text(participantNames)
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .lineLimit(1) // In case of many participants
+                    }
+                } else {
+                     HStack(spacing: 4) {
+                        Image(systemName: "person.2")
+                            .foregroundColor(.gray)
+                        Text("No participants assigned")
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
                 }
             }

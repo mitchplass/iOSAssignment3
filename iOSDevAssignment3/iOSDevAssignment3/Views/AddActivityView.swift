@@ -14,12 +14,12 @@ struct AddActivityView: View {
     let trip: Trip
     
     @State private var title = ""
-    @State private var description = ""
+    @State private var descriptionText = ""
     @State private var date: Date
     @State private var startTime: Date
     @State private var endTime: Date
     @State private var location = ""
-    @State private var selectedParticipants: [Person] = []
+    @State private var selectedParticipantIDs: [Person.ID] = []
     @State private var showingParticipantSelection = false
     
     init(isPresented: Binding<Bool>, trip: Trip, activityDate: Date? = nil) {
@@ -30,8 +30,7 @@ struct AddActivityView: View {
         self._date = State(initialValue: defaultDate)
 
         var startComponents = Calendar.current.dateComponents([.year, .month, .day], from: defaultDate)
-        startComponents.hour = 9
-        startComponents.minute = 0
+        startComponents.hour = 9; startComponents.minute = 0
         self._startTime = State(initialValue: Calendar.current.date(from: startComponents) ?? defaultDate)
 
         var endComponents = startComponents
@@ -44,7 +43,7 @@ struct AddActivityView: View {
             Form {
                 Section(header: Text("Activity Details")) {
                     TextField("Title", text: $title)
-                    TextField("Description", text: $description)
+                    TextField("Description", text: $descriptionText)
                     TextField("Location", text: $location)
                 }
                 
@@ -54,9 +53,12 @@ struct AddActivityView: View {
                     DatePicker("End Time", selection: $endTime, displayedComponents: .hourAndMinute)
                 }
                 
-                Section(header: Text("Participants")) {
-                    ForEach(selectedParticipants) { participant in
-                        Text(participant.name)
+                Section(header: Text("Participants (\(selectedParticipantIDs.count) selected)")) {
+                    // Display selected participant names
+                    ForEach(selectedParticipantIDs, id: \.self) { id in
+                        if let person = trip.participants.first(where: { $0.id == id }) {
+                            Text(person.name)
+                        }
                     }
                     
                     Button(action: {
@@ -67,19 +69,23 @@ struct AddActivityView: View {
                 }
             }
             .navigationTitle("Add Activity")
-            .navigationBarItems(
-                leading: Button("Cancel") {
-                    isPresented = false
-                },
-                trailing: Button("Add") {
-                    addActivity()
+            .toolbar { // Replaced navigationBarItems
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        isPresented = false
+                    }
                 }
-                .disabled(title.isEmpty)
-            )
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Add") {
+                        addActivity()
+                    }
+                    .disabled(title.isEmpty)
+                }
+            }
             .sheet(isPresented: $showingParticipantSelection) {
-                ParticipantSelectionView(
+                MultiSelectParticipantIDView(
                     allParticipants: trip.participants,
-                    selectedParticipants: $selectedParticipants
+                    selectedParticipantIDs: $selectedParticipantIDs
                 )
             }
         }
@@ -92,26 +98,20 @@ struct AddActivityView: View {
         let endMinute = Calendar.current.component(.minute, from: endTime)
         
         let combinedStartDate = Calendar.current.date(
-            bySettingHour: startHour,
-            minute: startMinute,
-            second: 0,
-            of: date
+            bySettingHour: startHour, minute: startMinute, second: 0, of: date
         ) ?? date
         
         let combinedEndDate = Calendar.current.date(
-            bySettingHour: endHour,
-            minute: endMinute,
-            second: 0,
-            of: date
+            bySettingHour: endHour, minute: endMinute, second: 0, of: date
         ) ?? date.addingTimeInterval(3600)
         
         let newActivity = Activity(
             title: title,
-            description: description,
+            description: descriptionText,
             date: date,
             startTime: combinedStartDate,
             endTime: combinedEndDate,
-            participants: selectedParticipants,
+            participants: selectedParticipantIDs,
             location: location
         )
         

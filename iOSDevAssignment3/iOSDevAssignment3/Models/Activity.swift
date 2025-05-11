@@ -14,9 +14,10 @@ struct Activity: Identifiable, Codable {
     var date: Date
     var startTime: Date
     var endTime: Date
-    var participants: [Person]
+    var participants: [Person.ID]
     var location: String
-    
+    var notes: String? = nil
+
     var isAllDay: Bool {
         Calendar.current.isDate(startTime, equalTo: endTime, toGranularity: .hour) &&
         Calendar.current.component(.hour, from: startTime) == 0 &&
