@@ -10,13 +10,13 @@ import SwiftUI
 struct AddExpenseView: View {
     @EnvironmentObject var tripViewModel: TripViewModel
     @Binding var isPresented: Bool
-    let trip: Trip // The trip to add the expense to
-
+    let trip: Trip
+    
     @State private var title: String = ""
     @State private var amountString: String = ""
     @State private var date: Date = Date()
-    @State private var paidBy: Person.ID? = nil // Store ID
-    @State private var selectedSplitAmongIDs: [Person.ID] = [] // Store IDs
+    @State private var paidBy: Person.ID? = nil
+    @State private var selectedSplitAmongIDs: [Person.ID] = []
     @State private var category: ExpenseCategory = .other
     @State private var notes: String = ""
 
@@ -24,7 +24,7 @@ struct AddExpenseView: View {
     @State private var showingParticipantSheetForSplitAmong = false
     
     @State private var isSplitUnequally: Bool = false
-    @State private var customAmountsInput: [Person.ID: String] = [:] // String for TextField input
+    @State private var customAmountsInput: [Person.ID: String] = [:]
 
     var availableParticipants: [Person] {
         trip.participants
@@ -45,7 +45,7 @@ struct AddExpenseView: View {
                 Section(header: Text("Expense Details")) {
                     TextField("Title (e.g., Dinner)", text: $title)
                     HStack {
-                        Text("$") // Currency symbol
+                        Text("$")
                         TextField("Amount", text: $amountString)
                             .keyboardType(.decimalPad)
                     }
@@ -61,7 +61,6 @@ struct AddExpenseView: View {
                 }
 
                 Section(header: Text("Payment & Sharing")) {
-                    // Paid By Picker
                     Picker("Paid By", selection: $paidBy) {
                         Text("Select Payer").tag(nil as Person.ID?)
                         ForEach(availableParticipants) { person in
@@ -69,7 +68,6 @@ struct AddExpenseView: View {
                         }
                     }
 
-                    // Shared Among Multi-selector
                     NavigationLink(destination: MultiSelectParticipantIDView(
                         allParticipants: availableParticipants,
                         selectedParticipantIDs: $selectedSplitAmongIDs
@@ -121,7 +119,6 @@ struct AddExpenseView: View {
                     TextField("Notes (optional)", text: $notes, axis: .vertical)
                         .lineLimit(3...)
                     Button("Add Receipt (Future Feature)") {
-                        // Placeholder for receipt functionality
                     }
                     .foregroundColor(.gray)
                 }
@@ -142,8 +139,8 @@ struct AddExpenseView: View {
     }
     
     private func validateCustomSplitLogic() -> String? {
-        guard isSplitUnequally else { return nil } // No validation if not splitting unequally
-        guard !selectedSplitAmongIDs.isEmpty else { return "Select sharers for custom split."} // Should not happen if UI is correct
+        guard isSplitUnequally else { return nil }
+        guard !selectedSplitAmongIDs.isEmpty else { return "Select sharers for custom split."}
         
         let totalExpenseAmount = Double(amountString) ?? 0.0
         if totalExpenseAmount == 0 { return "Total expense amount must be greater than zero."}
@@ -166,19 +163,17 @@ struct AddExpenseView: View {
         if abs(currentSplitSum - totalExpenseAmount) > 0.01 { // Tolerance for floating point
             return "Custom amounts sum (\(String(format: "%.2f", currentSplitSum))) must equal total expense (\(String(format: "%.2f", totalExpenseAmount)))."
         }
-        return nil // Valid
+        return nil
     }
 
     private func addExpense() {
         guard let finalAmount = Double(amountString), let finalPaidBy = paidBy else { return }
 
         var finalCustomSplitAmounts: [Person.ID: Double]? = nil
-        if isSplitUnequally {
-            // Ensure all selected sharers have valid double inputs for custom amounts
+
             var tempCustomAmounts: [Person.ID: Double] = [:]
             for id in selectedSplitAmongIDs {
                 guard let amountStr = customAmountsInput[id], let amountVal = Double(amountStr) else {
-                    // This should ideally be caught by validation, but as a safeguard
                     print("Error: Invalid custom amount string for \(personName(for: id) ?? "Unknown")")
                     return
                 }
@@ -195,7 +190,7 @@ struct AddExpenseView: View {
             splitAmong: selectedSplitAmongIDs,
             category: category,
             notes: notes.isEmpty ? nil : notes,
-            receiptImageURL: nil, // Implement later
+            receiptImageURL: nil,
             customSplitAmounts: finalCustomSplitAmounts
         )
         tripViewModel.addExpense(to: trip.id, expense: newExpense)

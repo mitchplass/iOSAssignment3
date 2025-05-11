@@ -14,12 +14,12 @@ struct AddActivityView: View {
     let trip: Trip
     
     @State private var title = ""
-    @State private var descriptionText = "" // Renamed to avoid conflict with swiftUI description
+    @State private var descriptionText = ""
     @State private var date: Date
     @State private var startTime: Date
     @State private var endTime: Date
     @State private var location = ""
-    @State private var selectedParticipantIDs: [Person.ID] = [] // MODIFIED
+    @State private var selectedParticipantIDs: [Person.ID] = []
     @State private var showingParticipantSelection = false
     
     init(isPresented: Binding<Bool>, trip: Trip, activityDate: Date? = nil) {
@@ -43,7 +43,7 @@ struct AddActivityView: View {
             Form {
                 Section(header: Text("Activity Details")) {
                     TextField("Title", text: $title)
-                    TextField("Description", text: $descriptionText) // Use descriptionText
+                    TextField("Description", text: $descriptionText)
                     TextField("Location", text: $location)
                 }
                 
@@ -83,8 +83,7 @@ struct AddActivityView: View {
                 }
             }
             .sheet(isPresented: $showingParticipantSelection) {
-                // Use the new/adapted MultiSelectParticipantIDView
-                MultiSelectParticipantIDView( // Assuming this is the name of your adapted view
+                MultiSelectParticipantIDView(
                     allParticipants: trip.participants,
                     selectedParticipantIDs: $selectedParticipantIDs
                 )
@@ -104,15 +103,15 @@ struct AddActivityView: View {
         
         let combinedEndDate = Calendar.current.date(
             bySettingHour: endHour, minute: endMinute, second: 0, of: date
-        ) ?? date.addingTimeInterval(3600) // ensure endTime is after startTime
+        ) ?? date.addingTimeInterval(3600)
         
         let newActivity = Activity(
             title: title,
-            description: descriptionText, // Use descriptionText
+            description: descriptionText,
             date: date,
             startTime: combinedStartDate,
             endTime: combinedEndDate,
-            participants: selectedParticipantIDs, // MODIFIED
+            participants: selectedParticipantIDs,
             location: location
         )
         
