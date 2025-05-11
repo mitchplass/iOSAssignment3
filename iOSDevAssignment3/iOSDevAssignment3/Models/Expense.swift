@@ -12,15 +12,23 @@ struct Expense: Identifiable, Codable {
     var title: String
     var amount: Double
     var date: Date
-    var paidBy: UUID
-    var splitAmong: [Person]
+    var paidBy: Person.ID
+    var splitAmong: [Person.ID]
     var category: ExpenseCategory
-    
-    var amountPerPerson: Double {
-        if splitAmong.isEmpty {
-            return 0
+    var notes: String? = nil
+    var receiptImageURL: String? = nil
+    var customSplitAmounts: [Person.ID: Double]? = nil
+
+    func amountOwedBy(_ personId: Person.ID, totalParticipantsInSplit: Int, tripParticipants: [Person]) -> Double {
+        if let customAmounts = customSplitAmounts, let customAmount = customAmounts[personId] {
+            return customAmount
         }
-        return amount / Double(splitAmong.count)
+        guard splitAmong.contains(personId), totalParticipantsInSplit > 0 else { return 0 }
+        return amount / Double(totalParticipantsInSplit)
+    }
+    
+    var numberOfSharers: Int {
+        splitAmong.count
     }
 }
 

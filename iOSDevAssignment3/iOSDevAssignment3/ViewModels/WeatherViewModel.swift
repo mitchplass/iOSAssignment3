@@ -16,14 +16,14 @@ class WeatherViewModel : ObservableObject {
     
     func getWeather(destination: String) {
         getCoordinates(from: destination) { coordinates, error in
-            if let error = error {
+            if error != nil {
                 self.errorString = "Failed to gather weather data"
             } else if let coordinates = coordinates {
                 self.requestWeatherData(coordinates: coordinates) { result in
                     switch result {
                     case .success(let weatherData):
                         self.weatherData = weatherData
-                    case .failure(let error):
+                    case .failure(_):
                         self.errorString = "Failed to get weather data"
                     }
                 }

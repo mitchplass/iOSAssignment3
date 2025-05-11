@@ -7,14 +7,25 @@
 
 import Foundation
 
-enum ItemStatus: String, Codable {
+enum ItemStatus: String, Codable, CaseIterable, Identifiable {
     case needed, packed, purchased
+    var id: String { self.rawValue }
+
 }
 
-struct Item: Identifiable, Codable {
+struct Item: Identifiable, Codable, Hashable {
     var id = UUID()
     var name: String
     var quantity: Int
-    var assignedTo: Person?
+    var assignedTo: Person.ID?
     var status: ItemStatus
+    var category: String? = nil
+    var isShared: Bool = true
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    static func == (lhs: Item, rhs: Item) -> Bool {
+        lhs.id == rhs.id
+    }
 }
