@@ -79,7 +79,7 @@ struct TripDetailView: View {
             }
         }
         .sheet(isPresented: $showingAddActivitySheet) {
-            AddActivityView(isPresented: $showingAddActivitySheet, trip: trip, activityDate: dateForNewActivity ?? trip.startDate)
+            ActivityFormView(isPresented: $showingAddActivitySheet, trip: trip, activityDate: dateForNewActivity ?? trip.startDate)
         }
         .sheet(isPresented: $showingAddItemSheet) {
             AddItemView(isPresented: $showingAddItemSheet, trip: trip, itemToEdit: itemToEdit)

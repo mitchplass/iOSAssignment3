@@ -15,6 +15,13 @@ struct TimetableView: View {
     @Binding var currentSelectedDateFromTimetable: Date?
     
     @State private var selectedDayIndex = 0
+    @State private var showingEditActivitySheet = false
+    @State private var activityToEdit: Activity? = nil
+    
+    private func editActivity(_ activity: Activity) {
+        activityToEdit = activity
+        showingEditActivitySheet = true
+    }
     
     var days: [Date] {
         let calendar = Calendar.current; let startDate = calendar.startOfDay(for: trip.startDate)
@@ -56,8 +63,16 @@ struct TimetableView: View {
                         LazyVStack(spacing: 16) {
                             ForEach(activitiesForDay) { activity in
                                 ActivityCell(activity: activity, allTripParticipants: trip.participants)
+                                    .onTapGesture {
+                                        editActivity(activity)
+                                    }
                                     .contextMenu {
-                                        Button(role: .destructive, action: { deleteActivity(activity) }) { Label("Delete", systemImage: "trash") }
+                                        Button(action: { editActivity(activity) }) { 
+                                            Label("Edit", systemImage: "pencil") 
+                                        }
+                                        Button(role: .destructive, action: { deleteActivity(activity) }) { 
+                                            Label("Delete", systemImage: "trash") 
+                                        }
                                     }
                             }
                         }
@@ -79,6 +94,17 @@ struct TimetableView: View {
         .onAppear {
             if currentSelectedDateFromTimetable == nil, !days.isEmpty, days.indices.contains(selectedDayIndex) {
                 currentSelectedDateFromTimetable = days[selectedDayIndex]
+            }
+        }
+        .sheet(isPresented: $showingEditActivitySheet, onDismiss: {
+            activityToEdit = nil
+        }) {
+            if let activity = activityToEdit {
+                ActivityFormView(
+                    isPresented: $showingEditActivitySheet,
+                    trip: trip,
+                    existingActivity: activity
+                )
             }
         }
     }
