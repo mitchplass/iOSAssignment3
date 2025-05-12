@@ -23,6 +23,7 @@ struct ActivityFormView: View {
     @State private var location = ""
     @State private var selectedParticipantIDs: [Person.ID] = []
     @State private var showingParticipantSelection = false
+    @State private var showingDeleteConfirmation = false
 
     init(isPresented: Binding<Bool>, trip: Trip, activityDate: Date? = nil, existingActivity: Activity? = nil) {
         self._isPresented = isPresented
@@ -93,7 +94,9 @@ struct ActivityFormView: View {
 
                 if isEditing {
                     Section {
-                        Button(role: .destructive, action: deleteActivity) {
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
                             HStack {
                                 Spacer()
                                 Label("Delete Activity", systemImage: "trash")
@@ -123,6 +126,14 @@ struct ActivityFormView: View {
                     allParticipants: trip.participants,
                     selectedParticipantIDs: $selectedParticipantIDs
                 )
+            }
+            .alert("Delete Activity", isPresented: $showingDeleteConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    deleteActivity()
+                }
+            } message: {
+                Text("Are you sure you want to delete this activity?")
             }
         }
     }
