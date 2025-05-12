@@ -48,7 +48,9 @@ struct ActivityFormView: View {
             self._title = State(initialValue: "")
             self._descriptionText = State(initialValue: "")
             self._location = State(initialValue: "")
-            self._selectedParticipantIDs = State(initialValue: [])
+
+            let currentUserId = trip.participants.first?.id
+            self._selectedParticipantIDs = State(initialValue: currentUserId != nil ? [currentUserId!] : [])
 
             var startComponents = Calendar.current.dateComponents([.year, .month, .day], from: defaultDate)
             startComponents.hour = 9; startComponents.minute = 0
