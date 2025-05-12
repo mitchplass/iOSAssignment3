@@ -17,6 +17,8 @@ struct TimetableView: View {
     @State private var selectedDayIndex = 0
     @State private var showingEditActivitySheet = false
     @State private var activityToEdit: Activity? = nil
+    @State private var showingDeleteConfirmation = false
+    @State private var activityToDelete: Activity? = nil
     
     private func editActivity(_ activity: Activity) {
         activityToEdit = activity
@@ -70,8 +72,11 @@ struct TimetableView: View {
                                         Button(action: { editActivity(activity) }) { 
                                             Label("Edit", systemImage: "pencil") 
                                         }
-                                        Button(role: .destructive, action: { deleteActivity(activity) }) { 
-                                            Label("Delete", systemImage: "trash") 
+                                        Button(role: .destructive, action: {
+                                            activityToDelete = activity
+                                            showingDeleteConfirmation = true
+                                        }) {
+                                            Label("Delete", systemImage: "trash")
                                         }
                                     }
                             }
@@ -107,8 +112,21 @@ struct TimetableView: View {
                 )
             }
         }
+        .alert("Delete Activity", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                activityToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let activity = activityToDelete {
+                    deleteActivity(activity)
+                    activityToDelete = nil
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete this activity?")
+        }
     }
-    
+
     private func deleteActivity(_ activity: Activity) {
         tripViewModel.deleteActivity(from: trip.id, activityId: activity.id)
     }
