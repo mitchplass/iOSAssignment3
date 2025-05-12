@@ -68,11 +68,11 @@ struct ActivityFormView: View {
                 Section(header: Text("Date & Time")) {
                     DatePicker("Date", selection: $date, in: trip.startDate...trip.endDate, displayedComponents: .date)
                     DatePicker("Start Time", selection: $startTime, displayedComponents: .hourAndMinute)
-                        .onChange(of: startTime) { _ in
+                        .onChange(of: startTime) {
                             adjustEndTimeIfInvalid()
                         }
                     DatePicker("End Time", selection: $endTime, displayedComponents: .hourAndMinute)
-                        .onChange(of: endTime) { _ in
+                        .onChange(of: endTime) {
                             adjustEndTimeIfInvalid()
                         }
                 }
@@ -88,6 +88,19 @@ struct ActivityFormView: View {
                         showingParticipantSelection = true
                     }) {
                         Label("Select Participants", systemImage: "person.badge.plus")
+                    }
+                }
+
+                if isEditing {
+                    Section {
+                        Button(role: .destructive, action: deleteActivity) {
+                            HStack {
+                                Spacer()
+                                Label("Delete Activity", systemImage: "trash")
+                                    .foregroundColor(.red)
+                                Spacer()
+                            }
+                        }
                     }
                 }
             }
@@ -113,7 +126,13 @@ struct ActivityFormView: View {
             }
         }
     }
-
+    
+    private func deleteActivity() {
+        if let activity = existingActivity {
+            tripViewModel.deleteActivity(from: trip.id, activityId: activity.id)
+            isPresented = false
+        }
+    }
     private func saveActivity() {
         let combinedStartDate = combine(date: date, with: startTime)
         let combinedEndDate = combine(date: date, with: endTime)
