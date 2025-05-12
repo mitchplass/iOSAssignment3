@@ -32,11 +32,13 @@ struct EmojiPickerView: View {
                             VStack(alignment: .leading) {
                                 Text(emojiItem.description)
                                     .font(.headline)
+                                    .foregroundColor(.primary)
                                 Text(emojiItem.aliases.joined(separator: ", "))
                                     .font(.caption)
                                     .foregroundColor(.gray)
                             }
                         }
+                        .foregroundColor(.primary)
                     }
                 }
             }
@@ -48,6 +50,7 @@ struct EmojiPickerView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .foregroundColor(.primary)
                 }
             }
         }
