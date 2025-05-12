@@ -22,8 +22,10 @@ struct ActivityFormView: View {
     @State private var endTime: Date
     @State private var location = ""
     @State private var selectedParticipantIDs: [Person.ID] = []
+    @State private var emoji = "🏙️"
     @State private var showingParticipantSelection = false
     @State private var showingDeleteConfirmation = false
+    @State private var showingEmojiPicker = false
 
     init(isPresented: Binding<Bool>, trip: Trip, activityDate: Date? = nil, existingActivity: Activity? = nil) {
         self._isPresented = isPresented
@@ -39,6 +41,7 @@ struct ActivityFormView: View {
             self._endTime = State(initialValue: activity.endTime)
             self._location = State(initialValue: activity.location)
             self._selectedParticipantIDs = State(initialValue: activity.participants)
+            self._emoji = State(initialValue: activity.emoji)
         } else {
             let defaultDate = activityDate ?? trip.startDate
             self._date = State(initialValue: defaultDate)
@@ -61,7 +64,19 @@ struct ActivityFormView: View {
         NavigationView {
             Form {
                 Section(header: Text("Activity Details")) {
-                    TextField("Title", text: $title)
+                    HStack {
+                        Button(action: {
+                            showingEmojiPicker = true
+                        }) {
+                            Text(emoji)
+                                .font(.largeTitle)
+                                .padding(8)
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(8)
+                        }
+                        .padding(.trailing, 8)
+                        TextField("Title", text: $title)
+                    }
                     TextField("Description", text: $descriptionText)
                     TextField("Location", text: $location)
                 }
@@ -127,6 +142,9 @@ struct ActivityFormView: View {
                     selectedParticipantIDs: $selectedParticipantIDs
                 )
             }
+            .sheet(isPresented: $showingEmojiPicker) {
+                EmojiPickerView(selectedEmoji: $emoji)
+            }
             .alert("Delete Activity", isPresented: $showingDeleteConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
@@ -158,6 +176,7 @@ struct ActivityFormView: View {
                 endTime: combinedEndDate,
                 participants: selectedParticipantIDs,
                 location: location,
+                emoji: emoji,
                 notes: existingActivity.notes
             )
             tripViewModel.updateActivity(in: trip.id, activity: updatedActivity)
@@ -169,9 +188,9 @@ struct ActivityFormView: View {
                 startTime: combinedStartDate,
                 endTime: combinedEndDate,
                 participants: selectedParticipantIDs,
-                location: location
+                location: location,
+                emoji: emoji
             )
-            
             tripViewModel.addActivity(to: trip.id, activity: newActivity)
         }
         isPresented = false

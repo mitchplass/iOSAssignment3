@@ -197,10 +197,12 @@ struct ActivityCell: View {
             .frame(width: 65, alignment: .trailing)
             
             VStack(alignment: .center, spacing: 0) {
-                Circle().fill(Color.blue).frame(width: 10, height: 10)
+                Text(activity.emoji)
+                    .font(.title3)
+                    .frame(width: 30, height: 30)
                 Rectangle().fill(Color.blue).frame(width: 2).frame(maxHeight: .infinity)
             }
-            .frame(width: 10)
+            .frame(width: 30)
 
 
             VStack(alignment: .leading, spacing: 4) {
