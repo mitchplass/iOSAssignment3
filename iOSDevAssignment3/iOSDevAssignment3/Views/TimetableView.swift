@@ -15,6 +15,15 @@ struct TimetableView: View {
     @Binding var currentSelectedDateFromTimetable: Date?
     
     @State private var selectedDayIndex = 0
+    @State private var showingEditActivitySheet = false
+    @State private var activityToEdit: Activity? = nil
+    @State private var showingDeleteConfirmation = false
+    @State private var activityToDelete: Activity? = nil
+    
+    private func editActivity(_ activity: Activity) {
+        activityToEdit = activity
+        showingEditActivitySheet = true
+    }
     
     var days: [Date] {
         let calendar = Calendar.current; let startDate = calendar.startOfDay(for: trip.startDate)
@@ -56,8 +65,19 @@ struct TimetableView: View {
                         LazyVStack(spacing: 16) {
                             ForEach(activitiesForDay) { activity in
                                 ActivityCell(activity: activity, allTripParticipants: trip.participants)
+                                    .onTapGesture {
+                                        editActivity(activity)
+                                    }
                                     .contextMenu {
-                                        Button(role: .destructive, action: { deleteActivity(activity) }) { Label("Delete", systemImage: "trash") }
+                                        Button(action: { editActivity(activity) }) { 
+                                            Label("Edit", systemImage: "pencil") 
+                                        }
+                                        Button(role: .destructive, action: {
+                                            activityToDelete = activity
+                                            showingDeleteConfirmation = true
+                                        }) {
+                                            Label("Delete", systemImage: "trash")
+                                        }
                                     }
                             }
                         }
@@ -81,8 +101,32 @@ struct TimetableView: View {
                 currentSelectedDateFromTimetable = days[selectedDayIndex]
             }
         }
+        .sheet(isPresented: $showingEditActivitySheet, onDismiss: {
+            activityToEdit = nil
+        }) {
+            if let activity = activityToEdit {
+                ActivityFormView(
+                    isPresented: $showingEditActivitySheet,
+                    trip: trip,
+                    existingActivity: activity
+                )
+            }
+        }
+        .alert("Delete Activity", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                activityToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let activity = activityToDelete {
+                    deleteActivity(activity)
+                    activityToDelete = nil
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete this activity?")
+        }
     }
-    
+
     private func deleteActivity(_ activity: Activity) {
         tripViewModel.deleteActivity(from: trip.id, activityId: activity.id)
     }
@@ -153,10 +197,12 @@ struct ActivityCell: View {
             .frame(width: 65, alignment: .trailing)
             
             VStack(alignment: .center, spacing: 0) {
-                Circle().fill(Color.blue).frame(width: 10, height: 10)
+                Text(activity.emoji)
+                    .font(.title3)
+                    .frame(width: 30, height: 30)
                 Rectangle().fill(Color.blue).frame(width: 2).frame(maxHeight: .infinity)
             }
-            .frame(width: 10)
+            .frame(width: 30)
 
 
             VStack(alignment: .leading, spacing: 4) {

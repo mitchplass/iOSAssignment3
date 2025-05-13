@@ -3,3 +3,6 @@ TripSync is an app designed to let people collaborate to plan trips by helping w
 
 Link to repo:
 https://github.com/mitchplass/iOSAssignment3
+
+emoji.json
+https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json         

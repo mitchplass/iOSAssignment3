@@ -16,6 +16,7 @@ struct Activity: Identifiable, Codable {
     var endTime: Date
     var participants: [Person.ID]
     var location: String
+    var emoji: String = "🏙️"
     var notes: String? = nil
 
     var isAllDay: Bool {
