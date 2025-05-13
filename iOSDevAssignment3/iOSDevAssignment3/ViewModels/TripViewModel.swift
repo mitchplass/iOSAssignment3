@@ -189,16 +189,45 @@ class TripViewModel: ObservableObject {
         }
     }
     
-    func deleteParticipant(from tripId: UUID, personId: UUID) {
-        if let tripIndex = trips.firstIndex(where: { $0.id == tripId }) {
-            trips[tripIndex].participants.removeAll { $0.id == personId }
-            
-            if currentTrip?.id == tripId {
-                currentTrip?.participants.removeAll { $0.id == personId }
+    func deleteParticipant(from tripId: UUID, personId: Person.ID) {
+        guard let tripIndex = trips.firstIndex(where: { $0.id == tripId }) else { return }
+
+        trips[tripIndex].participants.removeAll { $0.id == personId }
+
+        for i in 0..<trips[tripIndex].activities.count {
+            trips[tripIndex].activities[i].participants.removeAll { $0 == personId }
+        }
+
+        for i in 0..<trips[tripIndex].items.count {
+            if trips[tripIndex].items[i].assignedTo == personId {
+                trips[tripIndex].items[i].assignedTo = nil
+            }
+        }
+
+        var expensesToKeep: [Expense] = []
+        for var expense in trips[tripIndex].expenses {
+            if expense.paidBy == personId {
+                continue
             }
             
-            saveTrips()
+            expense.splitAmong.removeAll { $0 == personId }
+            expense.customSplitAmounts?.removeValue(forKey: personId)
+            
+            if expense.splitAmong.isEmpty && (expense.customSplitAmounts == nil || expense.customSplitAmounts!.isEmpty) {
+            }
+            expensesToKeep.append(expense)
         }
+        trips[tripIndex].expenses = expensesToKeep
+        
+        if currentTrip?.id == tripId {
+            if let updatedTrip = trips.first(where: { $0.id == tripId }) {
+                 currentTrip = updatedTrip
+            } else {
+                 currentTrip = nil
+            }
+        }
+        
+        saveTrips()
     }
     
     private func saveTrips() {

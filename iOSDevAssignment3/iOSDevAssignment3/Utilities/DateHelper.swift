@@ -82,13 +82,5 @@ struct DateHelper {
         return iCalDateFormatter.string(from: date)
     }
     
-    static func activitiesForDate(activities: [Activity], date: Date) -> [Activity] {
-        let startOfDay = startOfDay(for: date)
-        let endOfDay = endOfDay(for: date)
-        
-        return activities.filter { activity in
-            let activityDate = Calendar.current.startOfDay(for: activity.date)
-            return activityDate >= startOfDay && activityDate <= endOfDay
-        }
-    }
 }
+

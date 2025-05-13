@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct AddExpenseView: View {
     @EnvironmentObject var tripViewModel: TripViewModel
@@ -20,7 +21,10 @@ struct AddExpenseView: View {
     @State private var selectedSplitAmongIDs: [Person.ID] = []
     @State private var category: ExpenseCategory = .other
     @State private var notes: String = ""
-    // @State private var receiptImage: Image? // for future image picking
+    
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var displayedReceiptImage: Image? = nil
+    @State private var actualReceiptImageData: Data? = nil
 
     @State private var isSplitUnequally: Bool = false
     @State private var customAmountsInput: [Person.ID: String] = [:]
@@ -71,6 +75,14 @@ struct AddExpenseView: View {
                  _isSplitUnequally = State(initialValue: false)
                  _customAmountsInput = State(initialValue: [:])
             }
+
+            if let imageData = expense.receiptImageData {
+                _actualReceiptImageData = State(initialValue: imageData)
+                if let uiImage = UIImage(data: imageData) {
+                    _displayedReceiptImage = State(initialValue: Image(uiImage: uiImage))
+                }
+            }
+
         }
     }
 
@@ -160,13 +172,51 @@ struct AddExpenseView: View {
                 Section(header: Text("Optional Details")) {
                     TextField("Notes (e.g. Amy ate nothing.)", text: $notes, axis: .vertical)
                         .lineLimit(3...)
-                    Button {
-                        // placeholder for receipt functionality
-                        print("Add receipt tapped - feature to be implemented")
-                    } label: {
-                        Label("Add Receipt Photo", systemImage: "doc.text.image")
+                }
+                
+                Section(header: Text("Receipt Photo")) {
+                    if let displayedReceiptImage {
+                        displayedReceiptImage
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 200)
+                            .cornerRadius(8)
+                            .overlay(alignment: .topTrailing) {
+                                Button {
+                                    self.selectedPhotoItem = nil
+                                    self.displayedReceiptImage = nil
+                                    self.actualReceiptImageData = nil
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.title2)
+                                        .foregroundColor(.gray.opacity(0.8))
+                                        .background(Circle().fill(Color.white.opacity(0.6)))
+                                }
+                                .padding(5)
+                            }
                     }
-                    .foregroundColor(.accentColor)
+
+                    PhotosPicker(
+                        selection: $selectedPhotoItem,
+                        matching: .images,
+                        photoLibrary: .shared()
+                    ) {
+                        Label(displayedReceiptImage == nil ? "Add Receipt Photo" : "Change Receipt Photo", systemImage: "photo.on.rectangle.angled")
+                    }
+                    .onChange(of: selectedPhotoItem) {
+                        Task {
+                            if let data = try? await selectedPhotoItem?.loadTransferable(type: Data.self) {
+                                actualReceiptImageData = data
+                                if let uiImage = UIImage(data: data) {
+                                    displayedReceiptImage = Image(uiImage: uiImage)
+                                }
+                            } else {
+                                actualReceiptImageData = nil
+                                displayedReceiptImage = nil
+                                print("Failed to load image data or no item selected.")
+                            }
+                        }
+                    }
                 }
             }
             .navigationTitle(formTitle)
@@ -237,6 +287,7 @@ struct AddExpenseView: View {
             existingExpense.splitAmong = selectedSplitAmongIDs
             existingExpense.category = category
             existingExpense.notes = notes.isEmpty ? nil : notes
+            existingExpense.receiptImageData = actualReceiptImageData
             existingExpense.customSplitAmounts = finalCustomSplitAmounts
             
             tripViewModel.updateExpense(in: trip.id, expense: existingExpense)
@@ -249,7 +300,7 @@ struct AddExpenseView: View {
                 splitAmong: selectedSplitAmongIDs,
                 category: category,
                 notes: notes.isEmpty ? nil : notes,
-                receiptImageURL: nil, // implement later
+                receiptImageData: actualReceiptImageData,
                 customSplitAmounts: finalCustomSplitAmounts
             )
             tripViewModel.addExpense(to: trip.id, expense: newExpense)

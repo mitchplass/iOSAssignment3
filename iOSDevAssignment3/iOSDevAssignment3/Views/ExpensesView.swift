@@ -13,6 +13,10 @@ struct ExpensesView: View {
     let trip: Trip
     
     var onEditExpense: (Expense) -> Void
+    
+    @State private var showingReceiptImageSheet = false
+    @State private var receiptImageToShow: Data? = nil
+
 
     var body: some View {
         VStack(spacing: 0) {
@@ -36,11 +40,38 @@ struct ExpensesView: View {
                             .onTapGesture { onEditExpense(expense) }
                             .contextMenu {
                                 Button { onEditExpense(expense) } label: { Label("Edit Expense", systemImage: "pencil") }
+                                
+                                if expense.receiptImageData != nil {
+                                    Button {
+                                        receiptImageToShow = expense.receiptImageData
+                                        showingReceiptImageSheet = true
+                                    } label: {
+                                        Label("View Receipt", systemImage: "doc.richtext.fill")
+                                    }
+                                }
+                                
                                 Button(role: .destructive) { tripViewModel.deleteExpense(from: trip.id, expenseId: expense.id) } label: { Label("Delete Expense", systemImage: "trash") }
                             }
                     }
                 }
                 .listStyle(PlainListStyle())
+            }
+        }
+        .sheet(isPresented: $showingReceiptImageSheet) {
+            if let data = receiptImageToShow, let uiImage = UIImage(data: data) {
+                VStack {
+                    Text("Receipt")
+                        .font(.title2).padding()
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .padding()
+                    Spacer()
+                    Button("Done") { showingReceiptImageSheet = false }
+                        .padding()
+                }
+            } else {
+                Text("Could not load receipt image.")
             }
         }
     }
@@ -66,6 +97,11 @@ struct ExpenseRow: View {
                 Text(expense.title)
                     .font(.headline)
                 Spacer()
+                if expense.receiptImageData != nil {
+                    Image(systemName: "doc.richtext.fill")
+                        .foregroundColor(.blue)
+                        .padding(.trailing, 4)
+                }
                 Text(expense.amount.formatted(.currency(code: "AUD")))
                     .font(.headline)
                     .fontWeight(.medium)
