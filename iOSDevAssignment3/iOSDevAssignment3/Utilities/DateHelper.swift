@@ -8,6 +8,14 @@
 import Foundation
 
 struct DateHelper {
+
+    static let iCalDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
+        formatter.timeZone = TimeZone(abbreviation: "UTC")
+        return formatter
+    }()
+
     static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -68,6 +76,10 @@ struct DateHelper {
         components.day = 1
         components.second = -1
         return Calendar.current.date(byAdding: components, to: startOfDay(for: date))!
+    }
+
+    static func formatForICal(date: Date) -> String {
+        return iCalDateFormatter.string(from: date)
     }
     
     static func activitiesForDate(activities: [Activity], date: Date) -> [Activity] {
