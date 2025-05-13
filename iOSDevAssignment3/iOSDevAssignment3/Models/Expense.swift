@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Expense: Identifiable, Codable {
+struct Expense: Identifiable, Codable, Equatable {
     var id = UUID()
     var title: String
     var amount: Double
@@ -16,7 +16,7 @@ struct Expense: Identifiable, Codable {
     var splitAmong: [Person.ID]
     var category: ExpenseCategory
     var notes: String? = nil
-    var receiptImageURL: String? = nil
+    var receiptImageData: Data? = nil
     var customSplitAmounts: [Person.ID: Double]? = nil
 
     func amountOwedBy(_ personId: Person.ID, totalParticipantsInSplit: Int, tripParticipants: [Person]) -> Double {
@@ -29,6 +29,10 @@ struct Expense: Identifiable, Codable {
     
     var numberOfSharers: Int {
         splitAmong.count
+    }
+
+    static func == (lhs: Expense, rhs: Expense) -> Bool {
+        lhs.id == rhs.id
     }
 }
 

@@ -16,19 +16,29 @@ class WeatherViewModel : ObservableObject {
     
     func getWeather(destination: String) {
         getCoordinates(from: destination) { coordinates, error in
-            if error != nil {
-                self.errorString = "Failed to gather weather data"
+            if let error = error {
+                DispatchQueue.main.async {
+                    self.errorString = "Failed to get coordinates: \(error.localizedDescription)"
+                    self.weatherData = nil
+                }
             } else if let coordinates = coordinates {
                 self.requestWeatherData(coordinates: coordinates) { result in
-                    switch result {
-                    case .success(let weatherData):
-                        self.weatherData = weatherData
-                    case .failure(_):
-                        self.errorString = "Failed to get weather data"
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let weatherData):
+                            self.weatherData = weatherData
+                            self.errorString = ""
+                        case .failure(let fetchError):
+                            self.errorString = "Failed to get weather data: \(fetchError.localizedDescription)"
+                            self.weatherData = nil
+                        }
                     }
                 }
             } else {
-                self.errorString = "Failed to gather weather data"
+                DispatchQueue.main.async {
+                    self.errorString = "Failed to get coordinates: Unknown error."
+                    self.weatherData = nil
+                }
             }
         }
     }
@@ -37,7 +47,7 @@ class WeatherViewModel : ObservableObject {
         let urlString = "https://api.openweathermap.org/data/2.5/weather?lat=\(coordinates.latitude)&lon=\(coordinates.longitude)&appid=\(apiKey)&units=metric"
         
         guard let url = URL(string: urlString) else {
-            completion(.failure(NSError(domain: "Invalid URL", code: -1)))
+            completion(.failure(NSError(domain: "Invalid URL", code: -1, userInfo: [NSLocalizedDescriptionKey: "The weather API URL was invalid."])))
             return
         }
 
@@ -53,10 +63,9 @@ class WeatherViewModel : ObservableObject {
                     completion(.failure(error))
                 }
             } else {
-                completion(.failure(NSError(domain: "No data", code: -2)))
+                completion(.failure(NSError(domain: "No data", code: -2, userInfo: [NSLocalizedDescriptionKey: "No data received from weather API."])))
             }
         }
-        
         task.resume()
     }
     
@@ -71,7 +80,7 @@ class WeatherViewModel : ObservableObject {
                 let coordinates = location.coordinate
                 completion(coordinates, nil)
             } else {
-                completion(nil, nil)
+                completion(nil, NSError(domain: "GeocodingError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Could not find coordinates for the address."]))
             }
         }
     }
