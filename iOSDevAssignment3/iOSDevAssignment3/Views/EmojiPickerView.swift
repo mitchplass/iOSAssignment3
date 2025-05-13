@@ -1,3 +1,9 @@
+//
+//  EmojiPickerView.swift
+//  iOSDevAssignment3
+//
+//  Created by Amy Zhou on 13/5/25.
+//
 import SwiftUI
 
 struct EmojiPickerView: View {
