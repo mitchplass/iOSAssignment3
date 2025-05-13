@@ -14,74 +14,79 @@ struct DestinationView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                Text(destination)
-                    .font(.largeTitle)
+            VStack {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 60))
+                    .foregroundColor(.yellow)
+                    .padding(.bottom, 20)
+                
+                Text("This is the Destination Page")
+                    .font(.title)
                     .fontWeight(.bold)
-                    .padding(.top, 20)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Weather Forecast")
-                        .font(.headline)
-                        .foregroundColor(.gray)
-
+                
+                Text("Here you can view weather information about your destination")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 8)
+                
+                VStack(alignment: .leading, spacing: 16) {
                     if let weatherData = weatherViewModel.weatherData {
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("Condition: \(weatherData.weather.first?.description ?? "N/A")")
-                            Text("Temperature: \(String(format: "%.1f", weatherData.main.temp))°C")
-                            Text("Feels Like: \(String(format: "%.1f", weatherData.main.feels_like))°C")
-                            Text("Humidity: \(weatherData.main.humidity)%")
-                            Text("Pressure: \(weatherData.main.pressure) hPa")
-                            Text("Wind: \(String(format: "%.1f", weatherData.wind.speed)) m/s")
+                        WeatherRow(label: "Condition:", value: "\(weatherData.weather.first?.description ?? "N/A")")
+                        WeatherRow(label: "Condition:", value: "\(weatherData.weather.first?.description ?? "N/A")")
+                        WeatherRow(label: "Temp:", value: "\(weatherData.main.temp)°C")
+                        WeatherRow(label: "Feels Like:", value: "\(weatherData.main.feels_like)°C")
+                        WeatherRow(label: "Min Temp:", value: "\(weatherData.main.temp_min)°C")
+                        WeatherRow(label: "Max Temp:", value: "\(weatherData.main.temp_max)°C")
+                        WeatherRow(label: "Humidity:", value: "\(weatherData.main.humidity)%")
+                        WeatherRow(label: "Pressure:", value: "\(weatherData.main.pressure) hPa")
+                        WeatherRow(label: "Wind Speed:", value: "\(weatherData.wind.speed) m/s")
+                        WeatherRow(label: "Wind Direction:", value: "\(weatherData.wind.deg)°")
+                        WeatherRow(label: "Wind Gust:", value: "\(weatherData.wind.gust ?? 0.0) m/s")
+                        WeatherRow(label: "Cloud Coverage:", value: "\(weatherData.clouds.all)%")
+                        WeatherRow(label: "Visibility:", value: "\(weatherData.visibility / 1000) km")
+                        WeatherRow(label: "Sunrise:", value: "\(DateFormatter.localizedString(from: Date(timeIntervalSince1970: TimeInterval(weatherData.sys.sunrise)), dateStyle: .none, timeStyle: .short))")
+                        WeatherRow(label: "Sunset:", value: "\(DateFormatter.localizedString(from: Date(timeIntervalSince1970: TimeInterval(weatherData.sys.sunset)), dateStyle: .none, timeStyle: .short))")
+                        Map {
+                            Marker(destination, coordinate: CLLocationCoordinate2D(latitude: weatherData.coord.lat, longitude: weatherData.coord.lon))
+                                .tint(.red)
                         }
-                        .font(.body)
-                        .foregroundColor(.primary)
-                    } else {
-                        Text("Loading weather data...")
-                            .font(.body)
-                            .foregroundColor(.secondary)
+                        .frame(height: 300)
+                        .cornerRadius(15)
+                        .shadow(radius: 10)
                     }
                 }
                 .padding()
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Local Time")
-                        .font(.headline)
-                        .foregroundColor(.gray)
-                    if let weatherData = weatherViewModel.weatherData {
-                        Text("Sunrise: \(formatTime(weatherData.sys.sunrise))")
-                        Text("Sunset: \(formatTime(weatherData.sys.sunset))")
-                    } else {
-                        Text("Loading local time...")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-                }
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(12)
                 .padding()
-
-                if let weatherData = weatherViewModel.weatherData {
-                    Map {
-                        Marker(destination, coordinate: CLLocationCoordinate2D(latitude: weatherData.coord.lat, longitude: weatherData.coord.lon))
-                            .tint(.red)
-                    }
-                    .frame(height: 300)
-                    .cornerRadius(15)
-                    .shadow(radius: 10)
-                }
-
+                
+                Spacer()
             }
-            .padding(.horizontal)
-        }
-        .onAppear {
-            weatherViewModel.getWeather(destination: destination)
+            .padding(.top, 40)
+            .onAppear {
+                weatherViewModel.getWeather(destination: destination)
+            }
         }
     }
+}
 
-    private func formatTime(_ unixTime: Int) -> String {
-        let date = Date(timeIntervalSince1970: TimeInterval(unixTime))
-        let formatter = DateFormatter()
-        formatter.dateFormat = "hh:mm a"
-        return formatter.string(from: date)
+struct WeatherRow: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        HStack(alignment: .top) {
+            Text(label)
+                .fontWeight(.medium)
+                .frame(width: 100, alignment: .leading)
+            
+            Text(value)
+                .foregroundColor(.primary)
+            
+            Spacer()
+        }
     }
 }
 
